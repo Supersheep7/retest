@@ -1,0 +1,10 @@
+einops
+datasets
+evaluate
+matplotlib
+seaborn
+transformers
+transformer-lens
+jaxtyping
+huggingface_hub
+hf_transfer
