@@ -418,16 +418,13 @@ def probe_sweep(list_of_datasets: List,
 
         dataset = einops.rearrange(dataset, 'n b d -> (n b) d')
         
-        # Combined stratification key: domain x label
-        strat_key = [f"{f}_{l}" for f, l in zip(filenames, labels)]
-        
         skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=probe_cfg["seed"])
         
         fold_accuracies = []
         fold_directions = []
         fold_probes = []
         
-        for train_idx, test_idx in skf.split(dataset, strat_key):
+        for train_idx, test_idx in skf.split(dataset, labels):
             X_train, X_test = dataset[train_idx], dataset[test_idx]
             y_train, y_test = labels[train_idx], labels[test_idx]
             
