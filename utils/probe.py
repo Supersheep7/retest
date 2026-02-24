@@ -424,7 +424,7 @@ def probe_sweep(list_of_datasets: List,
         fold_directions = []
         fold_probes = []
         
-        for train_idx, test_idx in skf.split(dataset, labels):
+        for train_idx, test_idx in skf.split(dataset, labels.cpu()):
             X_train, X_test = dataset[train_idx], dataset[test_idx]
             y_train, y_test = labels[train_idx], labels[test_idx]
             
