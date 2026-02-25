@@ -5,8 +5,16 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 from src.cfg import load_cfg
 from transformer_lens import HookedTransformer
+from transformers import GPTNeoXConfig
 import torch as t
+
 cfg = load_cfg()
+
+if not hasattr(GPTNeoXConfig, 'rotary_pct'):
+    GPTNeoXConfig.rotary_pct = property(lambda self: self.rotary_percent)
+
+
+
 
 HF_TOKEN = cfg["common"]["hf_token"]
 
