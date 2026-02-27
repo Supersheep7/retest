@@ -86,12 +86,12 @@ def run_accuracy(model_name=cfg["common"]["model"]):
             directions.append(dir)
             probes.append(pro)
         accuracies = np.array(accuracies)
-        top_heads, top_heads_accuracies = get_top_entries(accuracies, n=5)
-        print("Top 5 Heads Positions and their Accuracies:", list(zip(top_heads, top_heads_accuracies)))
         # print("Directions look like:", directions[0])
         save_results(accuracies, "accuracies", model=model_name, modality='heads')
         save_results(directions, "directions", model=model_name, modality='heads')
         save_results(probes, "probes", model=model_name, modality='heads')
+        top_heads, top_heads_accuracies = get_top_entries(accuracies, n=5)
+        print("Top 5 Heads Positions and their Accuracies:", list(zip(top_heads, top_heads_accuracies)))
 
     print("Results saved in folder 'ROOT/full_results'")
 
