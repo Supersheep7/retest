@@ -342,9 +342,9 @@ def run_uniformity(model_name=None):
         if modality == 'heads':
             heads = decompose_mha(activations)
             activations = heads[best_layer[1]]
-        X = einops.rearrange(activations, 'n b d -> (n b) d') # Do we need this? 
+        X = einops.rearrange(activations, 'n b d -> (n b) d') 
         y = einops.rearrange(labels, 'n b -> (n b)')
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=cfg["common"]["seed"])
         probe = SupervisedProbe(X_train=X_train, y_train=y_train,
                         X_test=X_test, y_test=y_test,
                         probe_cfg=probe_cfg)
