@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--set", nargs="*", help="Overrides like train.lr=1e-4")
     parser.add_argument("--hf_token", help="Hugging Face access token")
     parser.add_argument("--model", help="Model to use")
-    parser.add_argument("--seed", type=int, default=666, help="Random seed")
+    parser.add_argument("--seed", type=int, default=cfg["common"]["seed"], help="Random seed")
     args = parser.parse_args()
     token = args.hf_token or os.getenv("HF_TOKEN") or getattr(cfg, "hf_token", None)
     if not token:
