@@ -1,6 +1,6 @@
 common:
   paths: {data: data/, results: results/}
-  seed: 777
+  seed: 666
   model: 'llama'
   hf_token: 'your_huggingface_token_here'
   device: 'cuda'
