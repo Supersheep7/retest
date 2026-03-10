@@ -328,7 +328,7 @@ def run_uniformity(model_name=None):
         return
     results = results = defaultdict(lambda: defaultdict(list))
     print("WARNING: experiment truncated to 2 train sets for statistical significance testing purposes. Change the slicing in the code to run on all sets.")
-    train_datasets = fold_to_probe[0][0]
+    train_datasets = fold_to_probe[0][0:1]
     test_datasets = fold_to_probe[1]
 
     for i, train_set in enumerate(train_datasets):
