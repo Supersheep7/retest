@@ -297,6 +297,10 @@ def get_data(experiment: str = 'accuracy', sweep: bool = False, logic: str = Non
       df_all['neg_label'].combine_first(df_all['new_label'])
       )
 
+      df_all['is_neg'] = df_all['filename'].apply(lambda x: int('neg' in x))
+      df_all['is_conj'] = df_all['filename'].apply(lambda x: int('conj' in x))
+      df_all['is_disj'] = df_all['filename'].apply(lambda x: int('disj' in x))
+
       folds_domains = split_curated_df_domains(df_all)
       folds_logic = split_curated_df_logic(df_all)
       

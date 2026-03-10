@@ -298,6 +298,14 @@ class Probe(object):
                 projections = probe(X, iid=True).detach().cpu().numpy()
         return projections
     
+    def project(self, X):
+        probe = self.probe
+        if self.probe_type == 'logistic_regression':
+            projections = probe.decision_function(X)
+            return projections
+        else:
+            raise NotImplementedError("Projection is only implemented for MMP probe.")
+    
     def save_best_probe(self,
                         filename: str
     ) -> None:
