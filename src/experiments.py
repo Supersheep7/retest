@@ -399,14 +399,13 @@ def run_uniformity(model_name=None):
         polarity_train_std = torch.where(polarity_train_std == 0, torch.ones_like(polarity_train_std), polarity_train_std)
         polarity_train_std = torch.nan_to_num(polarity_train_std, nan=1.0)
 
-        X_test  = (X_polarity_test - polarity_train_mean)
-        X_test  /= polarity_train_std
+        X_polarity_test  = (X_polarity_test - polarity_train_mean)
+        X_polarity_test  /= polarity_train_std
 
-        neg_pred = polarity_probe.predict(X_test)
+        neg_pred = polarity_probe.predict(X_polarity_test)
         y_is_neg_test = y_is_neg_test.cpu().detach().numpy()
         acc_neg = accuracy_score(neg_pred, y_is_neg_test)
         print("Accuracy of the polarity probe: ", acc_neg)
-
 
         ''' Norm loop '''
 
