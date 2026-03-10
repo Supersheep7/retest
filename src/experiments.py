@@ -339,6 +339,8 @@ def run_uniformity(model_name=None):
         # TO DO: train polar-enriched probes
         data = (list(train_set['statement']), list(train_set['label']))
         activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)
+        labels_is_neg = list(train_set['is_neg'])
+        
         activations = next(iter(activations.values()))
         if modality == 'heads':
             heads = decompose_mha(activations)
