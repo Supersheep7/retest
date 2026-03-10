@@ -342,7 +342,7 @@ def run_uniformity(model_name=None):
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
         pos_comm = train_set[train_set['filename'] == 'common_claim_true_false.csv']
         polarity_training_set = pd.concat((neg_comm, pos_comm))
-        polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['label']))
+        polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['is_neg']))
         polarity_activations, _ = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
         polarity_activations = next(iter(polarity_activations.values()))
         if modality == 'heads':
