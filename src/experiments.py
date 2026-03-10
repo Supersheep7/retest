@@ -337,10 +337,8 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
 
         # TO DO: train polar-enriched probes
-        labels_is_neg = list(train_set['is_neg'])
         data = (list(train_set['statement']), list(train_set['label']))
         activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)
-        print(activations.keys())
         activations = next(iter(activations.values()))
         if modality == 'heads':
             heads = decompose_mha(activations)
@@ -348,6 +346,8 @@ def run_uniformity(model_name=None):
         X = einops.rearrange(activations, 'n b d -> (n b) d') 
         y = einops.rearrange(labels, 'n b -> (n b)')
         y_is_neg = t.tensor(labels_is_neg)
+        n_samples = X.shape[0]
+        y_is_neg = y_is_neg[:n_samples]
 
         ''' Truth direction probe '''
 
