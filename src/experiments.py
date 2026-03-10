@@ -347,7 +347,7 @@ def run_uniformity(model_name=None):
             activations = heads[best_layer[1]]
         X = einops.rearrange(activations, 'n b d -> (n b) d') 
         y = einops.rearrange(labels, 'n b -> (n b)')
-        y_is_neg = einops.rearrange(labels_is_neg, 'n b -> (n b)')
+        y_is_neg = t.tensor(labels_is_neg)
 
         ''' Truth direction probe '''
 
