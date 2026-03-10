@@ -432,6 +432,8 @@ def run_uniformity(model_name=None):
 
             test_projections = probe.project(X)
             test_polarity_projections = polarity_probe.project(X)
+            is_that_neg = (1 / (1 + np.exp(-test_polarity_projections))) > 0.5
+            print("PREDICTED POLARITY", is_that_neg.sum()/len(is_that_neg))
             test_polarized = np.stack((test_projections, test_polarity_projections), axis=1)
             y_pred = polarized_probe.predict(test_polarized)
 
