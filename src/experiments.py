@@ -336,7 +336,7 @@ def run_uniformity(model_name=None):
         print("Openend training set n ", i)
         print("Domains of training set: ", train_set['filename'].unique())
 
-        neg_comm = train_set[train_set['neg_common_claims_true_false.csv']]
+        neg_comm = train_set[train_set['neg_common_claim_true_false.csv']]
         print(neg_comm['is_neg'].sum()/len(neg_comm))
         print(neg_comm.head())
 
