@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 import torch as t
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
@@ -336,34 +337,47 @@ def run_uniformity(model_name=None):
         print("Openend training set n ", i)
         print("Domains of training set: ", train_set['filename'].unique())
 
-        neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
-        print(neg_comm['is_neg'].sum()/len(neg_comm))
-        print(neg_comm.head())
+        # Get polarity-specific activations
 
-        # TO DO: train polar-enriched probes
+        neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
+        pos_comm = train_set[train_set['filename'] == 'common_claim_true_false.csv']
+        polarity_training_set = pd.concat((neg_comm, pos_comm))
+        polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['label']))
+        polarity_activations, _ = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
+        polarity_activations = next(iter(polarity_activations.values()))
+        if modality == 'heads':
+            heads = decompose_mha(polarity_activations)
+            polarity_activations = heads[best_layer[1]]
+        X_polarity = einops.rearrange(polarity_activations, 'n b d -> (n b) d')
+        y_is_neg_polarity = torch.tensor(list(polarity_training_set['is_neg']))[:X_polarity.shape[0]]
+
+        # Training set (full)
+
         data = (list(train_set['statement']), list(train_set['label']))
-        activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)
-        labels_is_neg = list(train_set['is_neg'])
-        
+        activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)        
         activations = next(iter(activations.values()))
         if modality == 'heads':
             heads = decompose_mha(activations)
             activations = heads[best_layer[1]]
         X = einops.rearrange(activations, 'n b d -> (n b) d') 
         y = einops.rearrange(labels, 'n b -> (n b)')
-        y_is_neg = t.tensor(labels_is_neg)
-        n_samples = X.shape[0]
-        y_is_neg = y_is_neg[:n_samples]
-        print(y_is_neg.sum()/len(y_is_neg))
 
-        ''' Truth direction probe '''
+        ''' Split data '''
 
         # train_0, ..., train_n-1
-        X_train, X_test, y_train, y_test, y_is_neg_train, y_is_neg_test = train_test_split(
-            X, y, y_is_neg,
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y,
             test_size=0.2,
             random_state=cfg["common"]["seed"]
         )
+        X_polarity_train, X_polarity_test, y_is_neg_train, y_is_neg_test = train_test_split(
+            X_polarity, y_is_neg_polarity,
+            test_size=0.2,
+            random_state=cfg["common"]["seed"]
+        )
+
+        ''' Train two base probes: one for the main task, one for polarity detection '''
+
         probe = SupervisedProbe(X_train=X_train, y_train=y_train,
                         X_test=X_test, y_test=y_test,
                         probe_cfg=probe_cfg)
@@ -371,19 +385,40 @@ def run_uniformity(model_name=None):
         print("Training Probe...")
         probe.train()
 
-        polarity_probe = SupervisedProbe(X_train=X_train, y_train=y_is_neg_train,
-                        X_test=X_test, y_test=y_is_neg_test,
+        polarity_probe = SupervisedProbe(X_train=X_polarity_train, y_train=y_is_neg_train,
+                        X_test=X_polarity_test, y_test=y_is_neg_test,
                         probe_cfg=probe_cfg)
         polarity_probe.initialize_probe(override_probe_type='logistic_regression')
         print("Training Polarity Probe...")
         polarity_probe.train()
+
+        # Predict negations
+
+        polarity_train_mean = X_polarity_train.mean(dim=0, keepdim=True)
+        polarity_train_std = X_polarity_train.std(dim=0, keepdim=True, unbiased=False)
+        polarity_train_std = torch.where(polarity_train_std == 0, torch.ones_like(polarity_train_std), polarity_train_std)
+        polarity_train_std = torch.nan_to_num(polarity_train_std, nan=1.0)
+
+        X_test  = (X_polarity_test - polarity_train_mean)
+        X_test  /= polarity_train_std
+
+        neg_pred = polarity_probe.predict(X_test)
+        y_is_neg_test = y_is_neg_test.cpu().detach().numpy()
+        acc_neg = accuracy_score(neg_pred, y_is_neg_test)
+        print("Accuracy of the polarity probe: ", acc_neg)
+
+
+        ''' Norm loop '''
 
         train_mean = X_train.mean(dim=0, keepdim=True)
         train_std = X_train.std(dim=0, keepdim=True, unbiased=False)
         train_std = torch.where(train_std == 0, torch.ones_like(train_std), train_std)
         train_std = torch.nan_to_num(train_std, nan=1.0)
 
-        # Train polarized probe
+        X_test  = (X_test - train_mean)
+        X_test  /= train_std
+
+        ''' Polarized Probe '''
 
         projections = probe.project(X_train)
         polarity_projections = polarity_probe.project(X_train)
@@ -391,11 +426,6 @@ def run_uniformity(model_name=None):
 
         polarized_probe = LogisticRegression()
         polarized_probe.fit(polarized_projections, y_train.cpu().numpy())
-
-        # Normalization loop
-
-        X_test  = (X_test - train_mean)
-        X_test  /= train_std
 
         test_projections = probe.project(X_test)
         test_polarity_projections = polarity_probe.project(X_test)
@@ -405,13 +435,6 @@ def run_uniformity(model_name=None):
         y_test = y_test.cpu().detach().numpy()
         acc = accuracy_score(y_test, y_pred)
         print("accuracy on first test set: ", acc)
-
-        # Predict negations
-
-        neg_pred = polarity_probe.predict(X_test)
-        y_is_neg_test = y_is_neg_test.cpu().detach().numpy()
-        acc_neg = accuracy_score(neg_pred, y_is_neg_test)
-        print("Accuracy of the polarity probe: ", acc_neg)
         
         for j, test_set in enumerate(test_datasets):
 
