@@ -350,6 +350,7 @@ def run_uniformity(model_name=None):
         y_is_neg = t.tensor(labels_is_neg)
         n_samples = X.shape[0]
         y_is_neg = y_is_neg[:n_samples]
+        print(y_is_neg.sum()/len(y_is_neg))
 
         ''' Truth direction probe '''
 
@@ -400,6 +401,13 @@ def run_uniformity(model_name=None):
         y_test = y_test.cpu().detach().numpy()
         acc = accuracy_score(y_test, y_pred)
         print("accuracy on first test set: ", acc)
+
+        # Predict negations
+
+        neg_pred = polarity_probe.predict(X_test)
+        y_is_neg_test = y_is_neg_test.cpu().detach().numpy()
+        acc_neg = accuracy_score(neg_pred, y_is_neg_test)
+        print("Accuracy of the polarity probe: ", acc_neg)
         
         for j, test_set in enumerate(test_datasets):
 
