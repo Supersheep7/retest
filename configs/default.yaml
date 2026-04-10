@@ -20,7 +20,7 @@ probe:
   dropout: 0.0
   var_normalize: True
   verbose: True
-  control: False
+  control: True
   test_size: 0.2
   with_std: True
   seed: 666
