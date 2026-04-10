@@ -426,7 +426,7 @@ def probe_sweep(list_of_datasets: List,
 
         dataset = einops.rearrange(dataset, 'n b d -> (n b) d')
         
-        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=probe_cfg["seed"])
+        skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=probe_cfg["seed"])
         
         fold_accuracies = []
         fold_directions = []
