@@ -596,7 +596,7 @@ class Estimator:
             if self.modality == 'heads':
                 heads = decompose_mha(activations)
                 activations = heads[self.best_layer[1]]
-            X_train, X_test, y_train, y_test = train_test_split(activations, labels, test_size=0.1, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(activations, labels, test_size=0.1, random_state=cfg["common"]["seed"])
             X_train = einops.rearrange(X_train, 'n b d -> (n b) d').detach().cpu().numpy()
             y_train = einops.rearrange(y_train, 'n b -> (n b)').detach().cpu().numpy()
             X_test = einops.rearrange(X_test, 'n b d -> (n b) d').detach().cpu().numpy()

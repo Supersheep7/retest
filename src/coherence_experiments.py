@@ -8,6 +8,7 @@ from utils.probe import *
 from cfg import load_cfg
 from utils.intervention import *
 cfg = load_cfg()
+t.manual_seed(cfg["common"]["seed"])
 
 def run_coherence_neg(estimator):
     train_data, data_pos, data_neg = get_data(experiment='coherence', logic='neg')
