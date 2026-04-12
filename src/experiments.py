@@ -127,7 +127,7 @@ def run_intervention(model_name=cfg["common"]["model"]):
                     r = t.randn_like(v)
                     rand_dirs.append(r)
                 directions_control = t.stack(rand_dirs)
-                print(f"Using orthogonal random control directions for {modality}.")
+                print(f"Using control directions for {modality}.")
             accuracies = t.tensor(t.load(Path(ROOT / "data" / "directions" / model_name / "accuracies_heads"), weights_only=False))
             break
         else:
