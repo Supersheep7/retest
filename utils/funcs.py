@@ -13,16 +13,6 @@ cfg = load_cfg()
 
 import torch
 
-def get_orthogonal_direction(v, eps=1e-8):
-    r = torch.randn_like(v)
-    # orthogonalize r w.r.t. v
-    v_norm_sq = (v * v).sum()
-    r_orth = r - (r * v).sum() / (v_norm_sq + eps) * v
-    # norm-match
-    r_orth = r_orth / (r_orth.norm() + eps) * v.norm()
-    return r_orth
-
-
 def force_format(*items, format='tensor', device=None):
 
     def to_numpy(item):
