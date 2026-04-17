@@ -342,6 +342,11 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
 
+        print(train_set['label'].head(20))
+        print(train_set['label'].tail(20))
+
+        train_set = train_set.sample(frac=1, random_state=cfg["common"]["seed"]).reset_index(drop=True)
+
         # Get polarity-specific activations
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
         pos_comm = train_set[train_set['filename'] == 'common_claim_true_false.csv']
@@ -373,10 +378,6 @@ def run_uniformity(model_name=None):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=cfg["common"]["seed"]
         )
-
-        print(len(polarity_training_set))
-        print(X_polarity.shape)
-        print(y_is_neg_polarity.shape)
 
         ''' Normalize '''
         train_mean = X_train.mean(dim=0, keepdim=True)
