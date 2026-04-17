@@ -329,7 +329,7 @@ def run_uniformity(model_name=None):
         return
     results = results = defaultdict(lambda: defaultdict(list))
     print("WARNING: experiment truncated to 2 train sets for testing purposes. Change the slicing in the code to run on all sets.")
-    train_datasets = fold_to_probe[0][0:1]
+    train_datasets = fold_to_probe[0][0]
     test_datasets = fold_to_probe[1]
 
     for i, train_set in enumerate(train_datasets):
@@ -338,11 +338,12 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
 
         print("Selecting Common Claims...")
-        train_set = train_set[train_set['filename'].isin(['neg_common_claim_true_false.csv', 'common_claim_true_false.csv'])]
+        train_set = train_set[train_set['filename'].isin(['neg_cities.csv', 'cities.csv'])]
+        print("Domains of training set: ", train_set['filename'].unique())
         # Get polarity-specific activations
 
-        neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
-        pos_comm = train_set[train_set['filename'] == 'common_claim_true_false.csv']
+        neg_comm = train_set[train_set['filename'] == 'neg_cities.csv']
+        pos_comm = train_set[train_set['filename'] == 'cities.csv']
         polarity_training_set = pd.concat((neg_comm, pos_comm))
         polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['is_neg']))
         polarity_activations, _ = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
