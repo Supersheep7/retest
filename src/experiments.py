@@ -374,12 +374,9 @@ def run_uniformity(model_name=None):
             X, y, test_size=0.2, random_state=cfg["common"]["seed"]
         )
 
-        print(polarity_training_set['is_neg'].unique())
-        print(polarity_training_set['is_neg'].value_counts())
-        print(train_set['label'].unique())
-        print(train_set['label'].value_counts())
-        print(y_is_neg_polarity.unique())
-
+        print(len(polarity_training_set))
+        print(X_polarity.shape)
+        print(y_is_neg_polarity.shape)
 
         ''' Normalize '''
         train_mean = X_train.mean(dim=0, keepdim=True)
