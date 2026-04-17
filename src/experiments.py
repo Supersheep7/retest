@@ -328,7 +328,7 @@ def run_uniformity(model_name=None):
         print("Invalid experiment type. Please choose 'logic' or 'domain'.")
         return
     results = results = defaultdict(lambda: defaultdict(list))
-    print("WARNING: experiment truncated to 2 train sets for statistical significance testing purposes. Change the slicing in the code to run on all sets.")
+    print("WARNING: experiment truncated to 2 train sets for testing purposes. Change the slicing in the code to run on all sets.")
     train_datasets = fold_to_probe[0][0:1]
     test_datasets = fold_to_probe[1]
 
@@ -337,6 +337,8 @@ def run_uniformity(model_name=None):
         print("Openend training set n ", i)
         print("Domains of training set: ", train_set['filename'].unique())
 
+        print("Selecting Common Claims...")
+        train_set = train_set[train_set['filename'].isin(['neg_common_claim_true_false.csv', 'common_claim_true_false.csv'])]
         # Get polarity-specific activations
 
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
@@ -394,6 +396,8 @@ def run_uniformity(model_name=None):
 
         # Predict negations
 
+        acc_truth = probe.get_acc()
+        print("Accuracy of the true/false probe: ", acc_truth)
         acc_pola = polarity_probe.get_acc()
         print("Accuracy of the polarity probe: ", acc_pola)
 
