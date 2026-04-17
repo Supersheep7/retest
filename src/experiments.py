@@ -365,6 +365,7 @@ def run_uniformity(model_name=None):
         X = einops.rearrange(activations, 'n b d -> (n b) d')
         y = einops.rearrange(labels, 'n b -> (n b)')
 
+
         ''' Split data '''
         X_polarity_train, X_polarity_test, y_is_neg_train, y_is_neg_test = train_test_split(
             X_polarity, y_is_neg_polarity, test_size=0.2, random_state=cfg["common"]["seed"]
@@ -372,6 +373,13 @@ def run_uniformity(model_name=None):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=cfg["common"]["seed"]
         )
+
+        print(polarity_training_set['is_neg'].unique())
+        print(polarity_training_set['is_neg'].value_counts())
+        print(train_set['label'].unique())
+        print(train_set['label'].value_counts())
+        print(y_is_neg_polarity.unique())
+
 
         ''' Normalize '''
         train_mean = X_train.mean(dim=0, keepdim=True)
