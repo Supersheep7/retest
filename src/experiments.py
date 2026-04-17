@@ -338,8 +338,7 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
 
         print("Selecting Common Claims...")
-        train_set = train_set[train_set['filename'].isin(['neg_common_claim_true_false.csv', 'common_claim_true_false.csv'])]
-        mask = train_set['filename'].str.startswith('neg')
+        mask = train_set['new_statement'].notna()
         train_set.loc[mask, 'statement'] = train_set.loc[mask, 'new_statement']
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
@@ -372,7 +371,6 @@ def run_uniformity(model_name=None):
             activations = heads[best_layer[1]]
         X = einops.rearrange(activations, 'n b d -> (n b) d')
         y = einops.rearrange(labels, 'n b -> (n b)')
-
 
         ''' Split data '''
         X_polarity_train, X_polarity_test, y_is_neg_train, y_is_neg_test = train_test_split(
@@ -436,7 +434,12 @@ def run_uniformity(model_name=None):
 
             print("Domains of test set: ", test_set['filename'].unique())
             print(test_set.head())
+            mask = test_set['new_statement'].notna()
+            test_set.loc[mask, 'statement'] = test_set.loc[mask, 'new_statement']
+            print(test_set.head())
+            
             data = (list(test_set['statement']), list(test_set['label']))
+            
 
             activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name, batch_size=16)
             print(activations.keys())
