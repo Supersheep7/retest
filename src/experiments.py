@@ -435,6 +435,7 @@ def run_uniformity(model_name=None):
         for j, test_set in enumerate(test_datasets):
 
             print("Domains of test set: ", test_set['filename'].unique())
+            print(test_set.head())
             data = (list(test_set['statement']), list(test_set['label']))
 
             activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name, batch_size=16)
