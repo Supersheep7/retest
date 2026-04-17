@@ -339,6 +339,8 @@ def run_uniformity(model_name=None):
 
         print("Selecting Common Claims...")
         train_set = train_set[train_set['filename'].isin(['neg_common_claim_true_false.csv', 'common_claim_true_false.csv'])]
+        mask = train_set['filename'].str.startswith('neg')
+        train_set.loc[mask, 'statement'] = train_set.loc[mask, 'new_statement']
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
 
