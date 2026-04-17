@@ -342,7 +342,7 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
 
-        train_set = train_set.sample(frac=1, random_state=cfg["common"]["seed"]).reset_index(drop=True)
+        # train_set = train_set.sample(frac=1, random_state=cfg["common"]["seed"]).reset_index(drop=True)
 
         # Get polarity-specific activations
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
