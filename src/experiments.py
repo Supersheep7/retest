@@ -331,9 +331,9 @@ def run_uniformity(model_name=None):
     print("WARNING: experiment truncated to 1 train set for testing purposes. Change the slicing in the code to run on all sets.")
     train_datasets = fold_to_probe[0][0:1]
     test_datasets = fold_to_probe[1]
-
+    pd.set_option('display.max_colwidth', None)
     for i, train_set in enumerate(train_datasets):
-
+        
         print("Opened training set n ", i)
         print("Domains of training set: ", train_set['filename'].unique())
 
@@ -342,13 +342,7 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
 
-        print(train_set['label'].head(20))
-        print(train_set['label'].tail(20))
-
         train_set = train_set.sample(frac=1, random_state=cfg["common"]["seed"]).reset_index(drop=True)
-
-        print(train_set['label'].head(20))
-        print(train_set['label'].tail(20))
 
         # Get polarity-specific activations
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
@@ -366,8 +360,6 @@ def run_uniformity(model_name=None):
         X_polarity = einops.rearrange(polarity_activations, 'n b d -> (n b) d')
         polarity_labels = einops.rearrange(polarity_labels, 'n b -> (n b)')
         y_is_neg_polarity = torch.tensor(list(polarity_training_set['is_neg']))[:X_polarity.shape[0]]
-        print(polarity_labels == y_is_neg_polarity)
-        print(len(polarity_labels) == len(y_is_neg_polarity))
 
         # Training set (full)
         data = (list(train_set['statement']), list(train_set['label']))
