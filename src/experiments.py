@@ -338,13 +338,13 @@ def run_uniformity(model_name=None):
         print("Domains of training set: ", train_set['filename'].unique())
 
         print("Selecting Common Claims...")
-        train_set = train_set[train_set['filename'].isin(['neg_cities.csv', 'cities.csv'])]
+        train_set = train_set[train_set['filename'].isin(['neg_common_claims_true_false.csv', 'common_claims_true_false.csv'])]
         print("Domains of training set: ", train_set['filename'].unique())
         print(train_set.head())
 
         # Get polarity-specific activations
-        neg_comm = train_set[train_set['filename'] == 'neg_cities.csv']
-        pos_comm = train_set[train_set['filename'] == 'cities.csv']
+        neg_comm = train_set[train_set['filename'] == 'neg_common_claims_true_false.csv']
+        pos_comm = train_set[train_set['filename'] == 'common_claims_true_false.csv']
         polarity_training_set = pd.concat((neg_comm, pos_comm))
         polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['is_neg']))
         polarity_activations, _ = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
