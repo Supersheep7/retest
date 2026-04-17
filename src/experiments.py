@@ -334,14 +334,15 @@ def run_uniformity(model_name=None):
 
     for i, train_set in enumerate(train_datasets):
 
-        print("Openend training set n ", i)
+        print("Opened training set n ", i)
         print("Domains of training set: ", train_set['filename'].unique())
 
         print("Selecting Common Claims...")
         train_set = train_set[train_set['filename'].isin(['neg_cities.csv', 'cities.csv'])]
         print("Domains of training set: ", train_set['filename'].unique())
-        # Get polarity-specific activations
+        print(train_set.head())
 
+        # Get polarity-specific activations
         neg_comm = train_set[train_set['filename'] == 'neg_cities.csv']
         pos_comm = train_set[train_set['filename'] == 'cities.csv']
         polarity_training_set = pd.concat((neg_comm, pos_comm))
@@ -355,88 +356,76 @@ def run_uniformity(model_name=None):
         y_is_neg_polarity = torch.tensor(list(polarity_training_set['is_neg']))[:X_polarity.shape[0]]
 
         # Training set (full)
-
         data = (list(train_set['statement']), list(train_set['label']))
-        activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)        
+        activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name)
         activations = next(iter(activations.values()))
         if modality == 'heads':
             heads = decompose_mha(activations)
             activations = heads[best_layer[1]]
-        X = einops.rearrange(activations, 'n b d -> (n b) d') 
+        X = einops.rearrange(activations, 'n b d -> (n b) d')
         y = einops.rearrange(labels, 'n b -> (n b)')
 
         ''' Split data '''
-
-        # train_0, ..., train_n-1
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y,
-            test_size=0.2,
-            random_state=cfg["common"]["seed"]
-        )
         X_polarity_train, X_polarity_test, y_is_neg_train, y_is_neg_test = train_test_split(
-            X_polarity, y_is_neg_polarity,
-            test_size=0.2,
-            random_state=cfg["common"]["seed"]
+            X_polarity, y_is_neg_polarity, test_size=0.2, random_state=cfg["common"]["seed"]
+        )
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=cfg["common"]["seed"]
         )
 
-        ''' Train two base probes: one for the main task, one for polarity detection '''
-
-        probe = SupervisedProbe(X_train=X_train, y_train=y_train,
-                        X_test=X_test, y_test=y_test,
-                        probe_cfg=probe_cfg)
-        probe.initialize_probe(override_probe_type='logistic_regression')
-        print("Training Probe...")
-        probe.train()
-
-        polarity_probe = SupervisedProbe(X_train=X_polarity_train, y_train=y_is_neg_train,
-                        X_test=X_polarity_test, y_test=y_is_neg_test,
-                        probe_cfg=probe_cfg)
-        polarity_probe.initialize_probe(override_probe_type='logistic_regression')
-        print("Training Polarity Probe...")
-        polarity_probe.train()
-
-        # Predict negations
-
-        acc_truth = probe.get_acc()
-        print("Accuracy of the true/false probe: ", acc_truth)
-        acc_pola = polarity_probe.get_acc()
-        print("Accuracy of the polarity probe: ", acc_pola)
-
-        ''' Norm loop '''
-
+        ''' Normalize '''
         train_mean = X_train.mean(dim=0, keepdim=True)
         train_std = X_train.std(dim=0, keepdim=True, unbiased=False)
         train_std = torch.where(train_std == 0, torch.ones_like(train_std), train_std)
         train_std = torch.nan_to_num(train_std, nan=1.0)
 
-        X_test  = (X_test - train_mean)
-        X_test  /= train_std
+        X_train_norm = (X_train - train_mean) / train_std
+        X_polarity_train_norm = (X_polarity_train - train_mean) / train_std
+        X_test_norm = (X_test - train_mean) / train_std
+        X_polarity_test_norm = (X_polarity_test - train_mean) / train_std
+
+        ''' Train base probes '''
+        X_train_np = X_train_norm.cpu().numpy()
+        X_test_np = X_test_norm.cpu().numpy()
+        X_polarity_train_np = X_polarity_train_norm.cpu().numpy()
+        X_polarity_test_np = X_polarity_test_norm.cpu().numpy()
+        y_train_np = y_train.cpu().numpy()
+        y_test_np = y_test.cpu().numpy()
+        y_is_neg_train_np = y_is_neg_train.cpu().numpy()
+        y_is_neg_test_np = y_is_neg_test.cpu().numpy()
+
+        probe = LogisticRegression()
+        print("Training Probe...")
+        probe.fit(X_train_np, y_train_np)
+        acc_truth = accuracy_score(y_test_np, probe.predict(X_test_np))
+        print("Accuracy of the true/false probe: ", acc_truth)
+
+        polarity_probe = LogisticRegression()
+        print("Training Polarity Probe...")
+        polarity_probe.fit(X_polarity_train_np, y_is_neg_train_np)
+        acc_pola = accuracy_score(y_is_neg_test_np, polarity_probe.predict(X_polarity_test_np))
+        print("Accuracy of the polarity probe: ", acc_pola)
 
         ''' Polarized Probe '''
-
-        projections = probe.project(X_train)
-        polarity_projections = polarity_probe.project(X_train)
+        projections = probe.decision_function(X_train_np)
+        polarity_projections = polarity_probe.decision_function(X_train_np)
         polarized_projections = np.stack((projections, polarity_projections), axis=1)
 
         polarized_probe = LogisticRegression()
-        polarized_probe.fit(polarized_projections, y_train.cpu().numpy())
+        polarized_probe.fit(polarized_projections, y_train_np)
 
-        test_projections = probe.project(X_test)
-        test_polarity_projections = polarity_probe.project(X_test)
+        test_projections = probe.decision_function(X_test_np)
+        test_polarity_projections = polarity_probe.decision_function(X_test_np)
         test_polarized = np.stack((test_projections, test_polarity_projections), axis=1)
         y_pred = polarized_probe.predict(test_polarized)
+        acc = accuracy_score(y_test_np, y_pred)
+        print("Accuracy on first test set: ", acc)
 
-        y_test = y_test.cpu().detach().numpy()
-        acc = accuracy_score(y_test, y_pred)
-        print("accuracy on first test set: ", acc)
-        
         for j, test_set in enumerate(test_datasets):
 
-            # test_0, ... , test_n-1
             print("Domains of test set: ", test_set['filename'].unique())
-
             data = (list(test_set['statement']), list(test_set['label']))
-    
+
             activations, labels = get_activations(model, data, modality=modality, focus=best_layer, model_name=model_name, batch_size=16)
             print(activations.keys())
             activations = next(iter(activations.values()))
@@ -446,29 +435,26 @@ def run_uniformity(model_name=None):
             X = einops.rearrange(activations, 'n b d -> (n b) d')
             y = einops.rearrange(labels, 'n b -> (n b)')
 
-            # Normalization loop
+            X_np = ((X - train_mean) / train_std).cpu().numpy()
+            y_np = y.cpu().detach().numpy()
 
-            X = (X - train_mean)
-            X /= train_std
-
-            test_projections = probe.project(X)
-            test_polarity_projections = polarity_probe.project(X)
+            test_projections = probe.decision_function(X_np)
+            test_polarity_projections = polarity_probe.decision_function(X_np)
             is_that_neg = (1 / (1 + np.exp(-test_polarity_projections))) > 0.5
-            print("PREDICTED POLARITY", is_that_neg.sum()/len(is_that_neg))
+            print("PREDICTED POLARITY", is_that_neg.sum() / len(is_that_neg))
             test_polarized = np.stack((test_projections, test_polarity_projections), axis=1)
             y_pred = polarized_probe.predict(test_polarized)
 
-            y = y.cpu().detach().numpy()
-            acc = accuracy_score(y, y_pred)
-
-            print("accuracy on test set ", j, " : ", acc)
+            acc = accuracy_score(y_np, y_pred)
+            print("Accuracy on test set ", j, " : ", acc)
 
             results[i][j].append(acc)
             print("Running results: ", results)
+
     results = to_dict(results)
     print("Uniformity experiment completed.")
-    print("Results: ", results)              
-    save_results(results, f"uniformity", model=model_name, modality='uniformity', notes=f"{experiment_type}"f"{modality}")
+    print("Results: ", results)
+    save_results(results, f"uniformity", model=model_name, modality='uniformity', notes=f"{experiment_type}{modality}")
     print("Results saved in folder 'ROOT/full_results'")
 
     return
