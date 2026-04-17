@@ -330,8 +330,8 @@ def run_uniformity(model_name=None):
         return
 
     results = defaultdict(lambda: defaultdict(list))
-    print("WARNING: experiment truncated to 2 train set for collecting Figure results.")
-    train_datasets = fold_to_probe[0][0:2]
+    # print("WARNING: experiment truncated to 2 train set for collecting Figure results.")
+    train_datasets = fold_to_probe[0]
     test_datasets = fold_to_probe[1]
     pd.set_option('display.max_colwidth', None)
 
