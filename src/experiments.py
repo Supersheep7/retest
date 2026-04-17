@@ -347,18 +347,27 @@ def run_uniformity(model_name=None):
 
         train_set = train_set.sample(frac=1, random_state=cfg["common"]["seed"]).reset_index(drop=True)
 
+        print(train_set['label'].head(20))
+        print(train_set['label'].tail(20))
+
         # Get polarity-specific activations
         neg_comm = train_set[train_set['filename'] == 'neg_common_claim_true_false.csv']
+        print(neg_comm.head())
         pos_comm = train_set[train_set['filename'] == 'common_claim_true_false.csv']
+        print(pos_comm.head())
         polarity_training_set = pd.concat((neg_comm, pos_comm))
+        polarity_training_set = train_set
         polarity_data = (list(polarity_training_set['statement']), list(polarity_training_set['is_neg']))
-        polarity_activations, _ = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
+        polarity_activations, polarity_labels = get_activations(model, polarity_data, modality=modality, focus=best_layer, model_name=model_name)
         polarity_activations = next(iter(polarity_activations.values()))
         if modality == 'heads':
             heads = decompose_mha(polarity_activations)
             polarity_activations = heads[best_layer[1]]
         X_polarity = einops.rearrange(polarity_activations, 'n b d -> (n b) d')
+        polarity_labels = einops.rearrange(polarity_labels, 'n b -> (n b)')
         y_is_neg_polarity = torch.tensor(list(polarity_training_set['is_neg']))[:X_polarity.shape[0]]
+        print(polarity_labels == y_is_neg_polarity)
+        print(len(polarity_labels) == len(y_is_neg_polarity))
 
         # Training set (full)
         data = (list(train_set['statement']), list(train_set['label']))
@@ -378,6 +387,8 @@ def run_uniformity(model_name=None):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=cfg["common"]["seed"]
         )
+
+        print(X_polarity_train == X_train)
 
         ''' Normalize '''
         train_mean = X_train.mean(dim=0, keepdim=True)
