@@ -366,7 +366,7 @@ def run_uniformity(model_name=None):
         y_train_np = y_train.cpu().numpy()
         y_test_np = y_test.cpu().numpy()
 
-        probe = LogisticRegression()
+        probe = LogisticRegression(max_iter=500)
         print("Training Probe...")
         probe.fit(X_train_np, y_train_np)
         acc_truth = accuracy_score(y_test_np, probe.predict(X_test_np))
